@@ -1,0 +1,37 @@
+#!/bin/bash                                                                      
+
+#########################
+### Content Migration ###
+#########################
+
+# Variables
+MIGRATION_DIR="/var/www/YOUR_APP/migrations/"
+ENTITIES=("node" "block" "menu" "user")
+MYSQL_USER=YOUR_USER
+MYSQL_PW=YOUR_PASSWORD
+DB_NAME=YOUR_DATABASE_NAME
+
+# Allows us to read user input below, assigns stdin to keyboard
+exec < /dev/tty
+
+# Check if the user wants to migrate content
+read -p "Run Content Migration (y/n)? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+  exit
+fi
+
+# Check if migration directory exist
+if [ ! -d "$MIGRATION_DIR" ]; then
+  # Control will enter here if $DIRECTORY doesn't exist.
+  mkdir $MIGRATION_DIR # Create directory to hold MySQL dumps
+fi
+
+# Export content
+for ENTITY in "${ENTITIES[@]}"; do
+  mysql $DB_NAME -u $MYSQL_USER -p$MYSQL_PW -N -e 'show tables like "'$ENTITY'%"' | xargs mysqldump $DB_NAME -u $MYSQL_USER -p$MYSQL_PW > $MIGRATION_DIR$ENTITY.sql
+done
+
+# Add migration to index
+git add $MIGRATION_DIR
