@@ -1,8 +1,8 @@
 #!/bin/bash                                                                      
 
-#########################
-### Content Migration ###
-#########################
+######################
+### Import Content ###
+######################
 
 # Variables
 MIGRATION_DIR="./.migrations/"
