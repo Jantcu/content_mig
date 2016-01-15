@@ -1,0 +1,42 @@
+#!/bin/bash                                                                      
+
+#########################
+### Content Migration ###
+#########################
+
+# Variables
+MIGRATION_DIR="./.migrations/"
+ENTITIES=("node" "block" "menu" "user")
+MYSQL_USER=$(grep -irs "'username' => '" sites/default/settings.php | awk '{print $3}'| tail -1 | tr -d "',")
+MYSQL_PW=$(grep -irs "'password' => '" sites/default/settings.php | awk '{print $3}'| tail -1 | tr -d "',")
+DB_NAME=$(grep -irs "'database' => '" sites/default/settings.php | awk '{print $3}'| tail -1 | tr -d "',")
+
+# Allows us to read user input below, assigns stdin to keyboard
+exec < /dev/tty
+
+# Check if user even wants to run a content import
+read -p "Import content, THIS WILL DELETE EXISTING CONTENT, continue (y/n)? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then # Enter control if user did NOT say "Y" or "y"
+  exit # Leave script
+fi
+
+# Allow user to choose which entities are imported
+for ENTITY in "${ENTITIES[@]}"; do
+  # Check if the user wants to import entity
+  read -p "Import $ENTITY content (y/n)? " -n 1 -r
+  echo    # (optional) move to a new line
+  if [[ $REPLY =~ ^[Yy]$ ]] # Enter control if user said "Y" or "y"
+  then
+    # Create list with only the Entities that the user wants to import
+    UPDATED_ENTITY_LIST+=( $ENTITY )
+  fi
+done
+
+# Import the MySQL files into the live DB
+for ENTITY in "${UPDATED_ENTITY_LIST[@]}"; do
+  mysql -u$MYSQL_USER -p$MYSQL_PW $DB_NAME < $MIGRATION_DIR$ENTITY.sql
+done
+
+# Clear caches so changes appear
+drush cr
